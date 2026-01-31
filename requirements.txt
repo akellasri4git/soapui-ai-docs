@@ -1,7 +1,15 @@
 lxml
 pydantic
+python-dotenv
+pyyaml
 rich
 networkx
+
+# LLM / RAG (choose one runtime later)
 langchain
 chromadb
 tiktoken
+
+# Optional (PDF generation later)
+markdown
+weasyprint
