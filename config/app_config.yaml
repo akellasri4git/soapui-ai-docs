@@ -3,7 +3,7 @@ app:
   version: 0.1.0
 
 paths:
-  input_project: input/soapui_project.xml
+  input_project: input/Project-1-soapui-project.xml
   external_scripts: input/external_scripts
   output_dir: output
 

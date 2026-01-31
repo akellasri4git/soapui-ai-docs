@@ -5,11 +5,13 @@ from core.testcase_extractor import TestCaseExtractor
 from core.testcase_validator import TestCaseValidatorSummarizer
 from core.script_reference_resolver import ScriptReferenceResolver
 from core.project_aggregator import ProjectAggregator
+from documentation.markdown_generator import MarkdownDocumentationGenerator
+from pathlib import Path
 
 
 def main():
     # 1️⃣ Load SoapUI project
-    loader = SoapUIProjectLoader("input/soapui_project.xml")
+    loader = SoapUIProjectLoader("input/Google-Maps-soapui-project.xml")
     root = loader.load()
 
     # 2️⃣ Extract test suites & test cases
@@ -58,6 +60,14 @@ def main():
     for key, value in project_summary.items():
         print(f"{key}: {value}")
 
+    
+    doc_generator = MarkdownDocumentationGenerator()
+    doc_generator.generate(
+        suites=suites,
+        project_summary=project_summary,
+        output_path=Path("output/documentation.md")
+    )
 
+    print("\n📄 Documentation generated at: output/documentation.md")
 if __name__ == "__main__":
     main()

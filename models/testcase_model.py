@@ -1,12 +1,16 @@
-from pydantic import BaseModel
-from typing import List
-from models.teststep_model import TestStepModel
+from dataclasses import dataclass, field
+from typing import List, Dict
 
 
-class TestCaseModel(BaseModel):
+@dataclass
+class TestCaseModel:
     name: str
     enabled: bool
 
-    test_steps: List[TestStepModel] = []
+    # Intent buckets
+    requests: List[Dict] = field(default_factory=list)
+    validations: List[Dict] = field(default_factory=list)
+    scripts: List[str] = field(default_factory=list)
+    data_flows: List[str] = field(default_factory=list)
 
-    external_scripts: List[str] = []
+    external_scripts: List[str] = field(default_factory=list)

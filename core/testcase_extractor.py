@@ -1,65 +1,50 @@
 from typing import List
 from lxml import etree
 
-from utils.xml_utils import find_elements
 from models.testsuite_model import TestSuiteModel
 from models.testcase_model import TestCaseModel
-from core.teststep_extractor import TestStepExtractor
+from core.intent_detector import IntentDetector
 
 
 class TestCaseExtractor:
-    """
-    Extracts TestSuites and TestCases from SoapUI XML.
-    """
+    NS = {"con": "http://eviware.com/soapui/config"}
 
     def __init__(self, root: etree._Element):
         self.root = root
 
     def extract(self) -> List[TestSuiteModel]:
-        test_suites: List[TestSuiteModel] = []
+        suites = []
 
-        suite_elements = find_elements(
-            self.root,
-            "//con:testSuite"
-        )
-
-        for suite in suite_elements:
-            suite_name = suite.get("name", "UnnamedTestSuite")
-
-            test_cases: List[TestCaseModel] = []
-
-            case_elements = suite.xpath(
-                ".//con:testCase",
-                namespaces=self.root.nsmap
+        for suite_elem in self.root.findall(".//con:testSuite", self.NS):
+            suite = TestSuiteModel(
+                name=suite_elem.attrib.get("name", "Unnamed TestSuite"),
+                test_cases=[]
             )
 
-            for case in case_elements:
-                case_name = case.get("name", "UnnamedTestCase")
-                disabled_attr = case.get("disabled", "false")
+            for tc_elem in suite_elem.findall(".//con:testCase", self.NS):
+                enabled = tc_elem.attrib.get("disabled", "false") != "true"
 
-                step_extractor = TestStepExtractor(case)
-                test_steps = step_extractor.extract()
-                external_scripts = []
-
-                for step in test_steps:
-                    if step.external_scripts:
-                        external_scripts.extend(step.external_scripts)
-
-                test_case = TestCaseModel(
-                    name=case_name,
-                    enabled=(disabled_attr.lower() != "true"),
-                    test_steps=test_steps,
-                    external_scripts=list(set(external_scripts))
+                tc = TestCaseModel(
+                    name=tc_elem.attrib.get("name", "Unnamed TestCase"),
+                    enabled=enabled
                 )
 
+                for elem in tc_elem.iter():
 
-                test_cases.append(test_case)
+                    # REQUESTS (🔥 NEW)
+                    if IntentDetector.is_request(elem):
+                        req = IntentDetector.extract_request(elem)
+                        if req["endpoint"] or req["operation"]:
+                            tc.requests.append(req)
 
-            test_suites.append(
-                TestSuiteModel(
-                    name=suite_name,
-                    test_cases=test_cases
-                )
-            )
+                    # ASSERTIONS
+                    if IntentDetector.is_assertion(elem):
+                        tc.validations.append(
+                            IntentDetector.extract_validation(elem)
+                        )
 
-        return test_suites
+                suite.test_cases.append(tc)
+
+            suites.append(suite)
+
+        return suites
