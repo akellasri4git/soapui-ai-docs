@@ -1,0 +1,7 @@
+lxml
+pydantic
+rich
+networkx
+langchain
+chromadb
+tiktoken
