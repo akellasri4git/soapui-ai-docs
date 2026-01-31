@@ -1,46 +1,37 @@
-from typing import List
-
-from models.testcase_model import TestCaseModel
-from models.assertion_model import AssertionModel
-
-
 class TestCaseValidatorSummarizer:
     """
-    Converts assertions into human-readable validation summaries
-    per TestCase.
+    Generates clear, human-readable explanation of test intent.
     """
 
-    def summarize(self, testcase: TestCaseModel) -> List[str]:
-        validations: List[str] = []
+    def summarize(self, testcase):
+        lines = []
 
-        for step in testcase.test_steps:
-            for assertion in step.assertions:
-                sentence = self._assertion_to_sentence(assertion)
-                if sentence:
-                    validations.append(sentence)
+        # 1️⃣ What API is called
+        if testcase.requests:
+            req = testcase.requests[0]
+            if req.get("operation"):
+                lines.append(
+                    f"This test calls the `{req['operation']}` operation."
+                )
+            elif req.get("endpoint"):
+                lines.append(
+                    f"This test sends a request to `{req['endpoint']}`."
+                )
 
-        return validations
+        # 2️⃣ What is validated
+        if testcase.validations:
+            lines.append("It validates that:")
 
-    # -------------------------
-    # Assertion → Sentence
-    # -------------------------
-    def _assertion_to_sentence(self, assertion: AssertionModel) -> str | None:
-        if not assertion.enabled:
-            return None
+            for v in testcase.validations:
+                vtype = v.get("type", "").lower()
 
-        operator = assertion.operator
-        expected = assertion.expected
+                if "xpath" in vtype:
+                    lines.append("- The response XML structure is correct")
+                elif "soap response" in vtype:
+                    lines.append("- A valid SOAP response is returned")
+                elif "contains" in vtype:
+                    lines.append("- The response contains expected values")
+                else:
+                    lines.append("- The response meets expected conditions")
 
-        if operator == "EQUALS":
-            return f"Response value must equal `{expected}`"
-
-        if operator == "PRESENT":
-            return f"`{expected}` must be present in the response"
-
-        if operator == "NOT_PRESENT":
-            return f"`{expected}` must NOT be present in the response"
-
-        if operator == "LESS_THAN":
-            return f"Response time must be less than `{expected}`"
-
-        return f"Validates assertion `{assertion.name}`"
+        return lines
